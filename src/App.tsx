@@ -571,7 +571,7 @@ function App() {
                   <button className="avatar-edit-badge" onClick={() => fileInputRef.current?.click()}><Camera size={14} /></button>
                 </div>
                 <input type="file" ref={fileInputRef} onChange={handleAvatarChange} accept="image/*" style={{ display: 'none' }} />
-                <p className="upload-hint-text">Click camera icon to change photo</p>
+
               </div>
               <div className="profile-form-group">
                 <label className="profile-field-label"> Name</label>
@@ -579,7 +579,7 @@ function App() {
               </div>
               <div className="profile-form-group">
                 <label className="profile-field-label">Role / Title</label>
-                <input type="text" value={userRole} onChange={(e) => setUserRole(e.target.value)} className="profile-input-control" />
+                <input type="Student/Employee/...etc" value={userRole} onChange={(e) => setUserRole(e.target.value)} className="profile-input-control" />
               </div>
             </div>
             <div className="profile-drawer-footer">
