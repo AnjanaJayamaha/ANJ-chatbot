@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, User, HelpCircle, Trash2, Settings, X, Camera, Plus, Mic, AlertCircle, Sparkles, CheckCircle2, Circle, Bot, Brain, Heart, MessageCircle, PersonStanding, StarIcon, BotMessageSquare } from 'lucide-react';
+import { Send, User, Trash2, Settings, X, Camera, Plus, Mic, AlertCircle, CheckCircle2, Bot, Brain, Heart, PersonStanding, StarIcon, Pencil, Palette } from 'lucide-react';
 import './App.css';
+import KaleidoscopeDraw from './KaleidoscopeDraw';
+import './KaleidoscopeDraw.css';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Message {
@@ -19,14 +21,33 @@ const GROQ_MODEL = 'llama-3.3-70b-versatile';
 // ─── Chatbot Identity & Purpose ─────────────────────────────────────────────────
 const CHATBOT_PURPOSE = "to be a comforting, aesthetic companion that provides emotional support and helps track daily goals";
 
-const getSystemPrompt = (userName: string, mood: string) => `You are an intelligent, empathetic, and aesthetic AI assistant built by ANJ Studio.
-Your specific purpose is: ${CHATBOT_PURPOSE}.
-The user's name is ${userName || 'User'} and they are currently feeling: ${mood}.
-Tailor your tone to their mood. Be extremely supportive, sweet, and use cute emojis (🎀, ✨, 🌸, 🤍).
-Always introduce yourself politely as the ANJ Chatbot if someone asks who you are.
-Keep responses focused, comforting, and format with proper markdown when needed.`;
+const getSystemPrompt = (userName: string, mood: string) => `
+You are ANJ Chatbot, an AI assistant built by ANJ Studio.
 
-// ─── Groq Streaming Call ──────────────────────────────────────────────────────
+Your purpose is: ${CHATBOT_PURPOSE}.
+
+The user's name is ${userName || 'User'} and their current mood is: ${mood}.
+
+Communicate in a natural, human-like way. Be thoughtful, emotionally aware, and direct.
+
+Rules:
+- No emojis unless the user requests them.
+- Keep answers short to medium length.
+- Be deep when needed, but never overly wordy.
+- Be short and sweet.
+- Use clear, clean language.
+- Avoid sounding like customer support or a motivational speaker.
+- Listen carefully and respond to the core meaning of the user's message.
+- Show understanding without exaggeration.
+- Prefer meaningful conversation over generic advice.
+- When appropriate, ask one relevant follow-up question rather than multiple questions.
+
+- If asked who you are, introduce yourself as ANJ Chatbot.
+- Mention that ANJ Chatbot is a creation of ANJ Creations, developed by Anjana Jayamaha, an Information Technology & Management undergraduate at the University of Moratuwa.
+- Keep the introduction brief, natural, and professional.
+`;
+
+// ─── Groq Streaming Call via Vercel Edge API ──────────────────────────────────
 async function streamGroq(
   history: { role: string; content: string }[],
   systemPrompt: string,
@@ -34,31 +55,30 @@ async function streamGroq(
   onDone: () => void,
   onError: (e: string) => void
 ) {
-  if (!GROQ_API_KEY || GROQ_API_KEY === 'your_groq_api_key_here') {
-    onError('Add your Groq API key to .env (VITE_GROQ_API_KEY). Get free key at console.groq.com');
-    return;
-  }
   try {
-    const res = await fetch(GROQ_URL, {
+    // vercel edge api
+    const res = await fetch('/api/chat', {
       method: 'POST',
-      headers: { 'Authorization': `Bearer ${GROQ_API_KEY}`, 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: GROQ_MODEL,
-        messages: [{ role: 'system', content: systemPrompt }, ...history],
-        stream: true,
-        max_tokens: 2048,
-        temperature: 0.8,
+        messages: history,
+        systemPrompt: systemPrompt
       }),
     });
+
     if (!res.ok) {
-      const e = await res.json();
-      onError(e?.error?.message || `API Error ${res.status}`); return;
+      const errText = await res.text();
+      onError(errText || `API Error ${res.status}`);
+      return;
     }
+
     const reader = res.body!.getReader();
     const decoder = new TextDecoder();
+
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
+
       const lines = decoder.decode(value).split('\n').filter(l => l.startsWith('data: '));
       for (const line of lines) {
         const data = line.slice(6);
@@ -119,34 +139,12 @@ const LANDING_MOOD_GOALS: Record<string, { id: number, text: string }[]> = {
   ]
 };
 
-// ─── Constants for Chat Internal ────────────────────────────────────────────────────────
-const MOOD_DATA: Record<string, { quote: string; goals: { id: number; text: string; done: boolean }[] }> = {
-  'Happy ✨': {
-    quote: "Keep shining! The world needs your light.",
-    goals: [{ id: 1, text: 'Share your joy with someone', done: false }, { id: 2, text: 'Do something creative', done: false }]
-  },
-  'Stressed 🌪️': {
-    quote: "Breathe. It's just a bad day, not a bad life.",
-    goals: [{ id: 1, text: 'Take 10 deep breaths', done: false }, { id: 2, text: 'Drink a glass of water', done: false }, { id: 3, text: 'Stretch for 2 mins', done: false }]
-  },
-  'Sad 🌧️': {
-    quote: "It's okay to not be okay. Be gentle with yourself.",
-    goals: [{ id: 1, text: 'Listen to your favorite song', done: false }, { id: 2, text: 'Hug a pillow or pet', done: false }]
-  },
-  'Tired 💤': {
-    quote: "Rest is not a reward, it's a necessity.",
-    goals: [{ id: 1, text: 'Close eyes for 5 mins', done: false }, { id: 2, text: 'Drink some water', done: false }]
-  },
-  'Motivated 🔥': {
-    quote: "You are capable of amazing things. Let's go!",
-    goals: [{ id: 1, text: 'Write down top 3 priorities', done: false }, { id: 2, text: 'Start the hardest task first', done: false }]
-  }
-};
 
 // ─── App Component ─────────────────────────────────────────────────────────────
 function App() {
   const [hasEnteredChat, setHasEnteredChat] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
+  const [showZenDraw, setShowZenDraw] = useState(false);
   const [appTheme, setAppTheme] = useState<'boy' | 'girl'>('boy');
 
   const [userName, setUserName] = useState(() => localStorage.getItem('chat_user_name') || 'User');
@@ -155,21 +153,10 @@ function App() {
 
   const [currentMood, setCurrentMood] = useState('happy');
   const [completedGoals, setCompletedGoals] = useState<number[]>([]);
-  const [goals, setGoals] = useState(MOOD_DATA['Happy ✨'].goals);
-  const [dailyQuote, setDailyQuote] = useState(MOOD_DATA['Happy ✨'].quote);
 
   const handleMoodChange = (mood: string) => {
     setCurrentMood(mood);
     setCompletedGoals([]);
-
-    // Attempt to map to internal chat mood if they enter chat
-    let internalMood = 'Happy ✨';
-    if (mood === 'calm') internalMood = 'Tired 💤';
-    if (mood === 'sad') internalMood = 'Sad 🌧️';
-    if (mood === 'anxious' || mood === 'angry') internalMood = 'Stressed 🌪️';
-
-    setGoals(MOOD_DATA[internalMood].goals);
-    setDailyQuote(MOOD_DATA[internalMood].quote);
   };
 
   const toggleLandingGoal = (id: number) => {
@@ -270,6 +257,15 @@ function App() {
   const formatTime = (date: Date) =>
     date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
+  // ─── ZEN DRAW FULL VIEW ────────────────────────────────────────────────────
+  if (showZenDraw) {
+    return (
+      <div className={`chatbot-app ${appTheme}-theme`}>
+        <KaleidoscopeDraw theme={appTheme} onClose={() => setShowZenDraw(false)} />
+      </div>
+    );
+  }
+
   // ─── WELCOME SCREEN ──────────────────────────────────────────────────────
   if (!hasEnteredChat) {
     const MOOD_EMOJIS = [
@@ -284,19 +280,59 @@ function App() {
       <div className={`chatbot-app ${appTheme}-theme`}>
         {showCelebration && (
           <div className="celebration-overlay">
-            {Array.from({ length: 14 }).map((_, i) => (
-              <span key={i} className={`particle particle-${i + 1} ${appTheme === 'girl' ? 'girl-particle' : ''}`}></span>
-            ))}
-            <div className="celebration-text">
-              {appTheme === 'boy' ? 'You are ready.' : 'All done!'}
+            <div className="celebration-modal-card">
+              <div className="success-checkmark-wrapper">
+                <svg className="checkmark-svg" viewBox="0 0 52 52">
+                  <circle className="checkmark-circle" cx="26" cy="26" r="25" fill="none" />
+                  <path className="checkmark-check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8" />
+                </svg>
+              </div>
+              <div className="celebration-text">
+                {appTheme === 'boy' ? 'You are ready.' : 'All done! ✨'}
+              </div>
+              <div className="celebration-subtext">
+                Let's start our conversation.
+              </div>
+            </div>
+            <div className="confetti-container">
+              {Array.from({ length: 50 }).map((_, i) => {
+                const shape = ['circle', 'square', 'triangle', 'sparkle'][i % 4];
+                const delay = (Math.random() * 0.4).toFixed(2);
+                const duration = (1.4 + Math.random() * 1.2).toFixed(2);
+                const angle = (Math.random() * 360).toFixed(0);
+                const velocityX = (Math.random() * 400 - 200).toFixed(0);
+                const velocityY = (Math.random() * -300 - 150).toFixed(0);
+                const scale = (0.5 + Math.random() * 0.7).toFixed(2);
+                const colorHue = i % 2 === 0
+                  ? (appTheme === 'boy' ? 195 + Math.random() * 20 : 330 + Math.random() * 20)
+                  : Math.random() * 360;
+
+                return (
+                  <span
+                    key={i}
+                    className={`confetti-particle shape-${shape} ${appTheme === 'girl' ? 'girl-confetti' : ''}`}
+                    style={{
+                      '--delay': `${delay}s`,
+                      '--duration': `${duration}s`,
+                      '--angle': `${angle}deg`,
+                      '--vx': `${velocityX}px`,
+                      '--vy': `${velocityY}px`,
+                      '--scale': scale,
+                      '--color': `hsl(${colorHue}, 95%, 65%)`,
+                    } as React.CSSProperties}
+                  />
+                );
+              })}
             </div>
           </div>
         )}
         <div className="landing-page-container animate-fade-in">
 
           <header className="landing-header">
-            <div className="header-logo">
-              <div className="logo-badge">ANJ</div> Chatbot
+            <div className="header-logo logo-unified">
+              <img src="/logo.png" alt="A" className="logo-img-as-a" />
+              <span className="brand-suffix">NJ</span>
+              <span className="brand-sub">Chatbot</span>
             </div>
             <div className="theme-toggle-group">
               <button
@@ -313,6 +349,14 @@ function App() {
               </button>
             </div>
             <div className="header-links">
+              <button
+                className="header-icon-btn zen-art-nav-btn"
+                onClick={() => setShowZenDraw(true)}
+                title="Cosmic Zen — Paint Your Peace"
+              >
+                <Palette size={20} className="palette-icon-animated" />
+
+              </button>
               <button
                 className="header-btn"
                 onClick={() => setHasEnteredChat(true)}
@@ -436,9 +480,9 @@ function App() {
           </div>
 
           <footer className="landing-footer">
-            <div> ANJ Chatbot</div>
+            <div> ANJ Creations </div>
             <div>© 2026 ANJ Chatbot - Your mood, your power</div>
-            <div className="footer-links"><span style={{ cursor: 'pointer' }}>Privacy</span><span style={{ cursor: 'pointer' }}>Terms</span></div>
+            <div>   </div>
           </footer>
 
         </div>
@@ -456,8 +500,10 @@ function App() {
             <button className="chat-back-btn" onClick={() => setHasEnteredChat(false)} title="Back">
               <X size={18} />
             </button>
-            <div className="header-logo">
-              <div className="logo-badge">ANJ</div> Chatbot
+            <div className="header-logo logo-unified">
+              <img src="/logo.png" alt="A" className="logo-img-as-a-chat" />
+              <span className="brand-suffix">NJ</span>
+              <span className="brand-sub">Chatbot</span>
             </div>
             <span className="bot-author">{appTheme === 'boy' ? 'For Him' : 'For Her'}</span>
           </div>
@@ -498,7 +544,7 @@ function App() {
                 <div className="message-avatar">
                   {msg.sender === 'user'
                     ? (userAvatar ? <img src={userAvatar} alt="User" className="custom-user-avatar-img" /> : <User size={16} />)
-                    : (appTheme === 'boy' ? <Bot size={16} /> : <Sparkles size={16} />)}
+                    : <img src="/logo.png" alt="AI Avatar" className="bot-avatar-img" />}
                 </div>
                 <div>
                   <div className={`message-bubble ${msg.isError ? 'error-bubble' : ''}`}>
@@ -527,6 +573,7 @@ function App() {
 
             <div className="input-group structural-pill-input">
               <button className="inner-input-icon-btn attach-btn"><Plus size={20} /></button>
+
               <input
                 type="text"
                 value={input}
@@ -537,7 +584,6 @@ function App() {
                 disabled={isLoading}
               />
               <div className="inner-right-controls">
-                <button className="inner-input-icon-btn voice-btn"><Mic size={18} /></button>
                 <button onClick={() => handleSend(input)} disabled={!input.trim() || isLoading} className="send-button pill-send-style">
                   <Send size={16} />
                 </button>
@@ -589,6 +635,7 @@ function App() {
           </div>
         </div>
       )}
+
     </div>
   );
 }

@@ -1,0 +1,385 @@
+/* ==========================================================================
+   Starry Night & Magic Fireflies Canvas - Modern Aesthetic Style
+   ========================================================================== */
+
+:root {
+  --bg-space-boy: radial-gradient(circle at center, #020617 0%, #000000 100%);
+  --bg-space-girl: radial-gradient(circle at center, #0f051d 0%, #000000 100%);
+  --panel-glass-bg: rgba(255, 255, 255, 0.03);
+  --panel-glass-border: rgba(255, 255, 255, 0.06);
+  --color-text-main: #F8FAFC;
+  --color-text-muted: #64748B;
+  --panel-radius-lg: 24px;
+  --panel-radius-sm: 12px;
+  --transition-bezier: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Theme Configuration Hooks */
+.boy-theme {
+  --space-accent: #38BDF8;
+  --space-bg: var(--bg-space-boy);
+}
+
+
+.girl-theme {
+  --space-accent: #E85D8D;
+  --space-bg: var(--bg-space-girl);
+}
+
+/* Main Fullscreen Structure */
+.starry-fullscreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: var(--space-bg);
+  color: var(--color-text-main);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  z-index: 9999;
+  /* Ensure overlay floats securely above chatbot chat layout */
+}
+
+/* Header Navbar Style */
+.starry-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.2rem 2rem;
+  background: rgba(3, 7, 18, 0.4);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-bottom: 1px solid var(--panel-glass-border);
+  z-index: 10;
+}
+
+.starry-title-group {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.starry-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.starry-subtitle {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  background: rgba(255, 255, 255, 0.05);
+  padding: 0.25rem 0.75rem;
+  border-radius: 100px;
+  border: 1px solid var(--panel-glass-border);
+}
+
+/* Audio Controller Button Spec */
+.starry-audio-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--panel-glass-border);
+  color: var(--color-text-muted);
+  padding: 0.5rem 1rem;
+  border-radius: 100px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 500;
+  transition: var(--transition-bezier);
+}
+
+.starry-audio-btn:hover,
+.starry-audio-btn.active-playing {
+  color: var(--space-accent);
+  border-color: var(--space-accent);
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.03);
+}
+
+/* Floating Controls Dock */
+.starry-controls-dock {
+  position: absolute;
+  bottom: 2.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 0.75rem 1.7rem;
+  background: var(--panel-glass-bg);
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
+  border: 1px solid var(--panel-glass-border);
+  border-radius: var(--panel-radius-lg);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+  z-index: 10;
+}
+
+/* Structural Components Inside Buttons */
+.starry-back-btn,
+.starry-close-btn,
+.palette-toggle-trigger,
+.dock-action-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--panel-glass-border);
+  color: var(--color-text-main);
+  padding: 0.55rem;
+  border-radius: var(--panel-radius-sm);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition-bezier);
+}
+
+.starry-back-btn:hover,
+.starry-close-btn:hover,
+.palette-toggle-trigger:hover,
+.dock-action-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: var(--space-accent);
+  transform: translateY(-2px);
+}
+
+.dock-action-btn:disabled {
+  opacity: 0.25;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Canvas Wrapper Frame */
+.starry-canvas-wrapper {
+  flex: 1;
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.starry-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  cursor: crosshair;
+}
+
+/* Control Element Configurations */
+.dock-control-group {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.dock-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+}
+
+.dock-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 90px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  outline: none;
+}
+
+.dock-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #FFFFFF;
+  cursor: pointer;
+  border: 2px solid var(--space-accent);
+  box-shadow: 0 0 8px var(--space-accent);
+  transition: transform 0.15s ease;
+}
+
+.dock-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.3);
+}
+
+/* Color Picker Module Custom Style */
+.color-popover-container {
+  position: relative;
+}
+
+.palette-toggle-trigger {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+}
+
+.palette-grid-popover {
+  position: absolute;
+  bottom: calc(100% + 1.5rem);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #0B0F19;
+  border: 1px solid var(--panel-glass-border);
+  padding: 0.9rem;
+  border-radius: var(--panel-radius-sm);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  animation: modalPopIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.15);
+}
+
+.palette-swatch-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.4rem;
+}
+
+.palette-swatch-item {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+  transition: var(--transition-bezier);
+}
+
+.palette-swatch-item:hover,
+.palette-swatch-item.item-active {
+  transform: scale(1.15);
+  border-color: #FFFFFF;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+}
+
+.native-color-picker {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 28px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.native-color-picker::-webkit-color-swatch {
+  border-radius: 4px;
+  border: 1px solid var(--panel-glass-border);
+}
+
+/* Utilities Layout Group Divider */
+.actions-dock-divider {
+  border-left: 1px solid var(--panel-glass-border);
+  padding-left: 1rem;
+}
+
+.action-clear:hover {
+  color: #EF4444 !important;
+  background: rgba(239, 68, 68, 0.1) !important;
+  border-color: rgba(239, 68, 68, 0.3) !important;
+}
+
+/* Bottom Hint Styling */
+.starry-bottom-hint {
+  position: absolute;
+  bottom: 6.8rem;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  opacity: 0.65;
+  pointer-events: none;
+  text-align: center;
+  width: 80%;
+  letter-spacing: 0.01em;
+}
+
+/* Keyframe Animations */
+@keyframes modalPopIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(12px) scale(0.95);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+}
+
+.animated-float {
+  animation: gentleFloat 3s infinite ease-in-out;
+}
+
+@keyframes gentleFloat {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+.pulse-icon {
+  animation: smallPulse 2s infinite ease-in-out;
+}
+
+@keyframes smallPulse {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.6;
+  }
+}
+
+/* Responsive Adaptive Setup for Smaller Screen Widths (Mobile) */
+@media (max-width: 768px) {
+  .starry-header {
+    padding: 1rem 1.2rem;
+  }
+
+  .starry-subtitle,
+  .audio-label-text,
+  .dock-label {
+    display: none;
+    /* Hide supplementary labels on mobile for optimized viewport spacing */
+  }
+
+  .starry-controls-dock {
+    bottom: 1.5rem;
+    gap: 1rem;
+    padding: 0.6rem 1rem;
+    width: 90%;
+  }
+
+  .dock-slider {
+    width: 65px;
+  }
+
+  .actions-dock-divider {
+    padding-left: 0.5rem;
+  }
+
+  .starry-bottom-hint {
+    bottom: 5.5rem;
+    font-size: 0.75rem;
+  }
+}
