@@ -145,7 +145,7 @@ function App() {
   const [hasEnteredChat, setHasEnteredChat] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [showZenDraw, setShowZenDraw] = useState(false);
-  const [appTheme, setAppTheme] = useState<'boy' | 'girl'>('boy');
+  const [appTheme, setAppTheme] = useState<'boy' | 'girl'>('girl');
 
   const [userName, setUserName] = useState(() => localStorage.getItem('chat_user_name') || 'User');
   const [userRole, setUserRole] = useState(() => localStorage.getItem('chat_user_role') || 'Explorer');
